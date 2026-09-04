@@ -1,0 +1,307 @@
+import { BorrowerInput } from './types';
+
+export interface QuestionDefinition {
+  id: keyof BorrowerInput | string;
+  tier: 'must' | 'additional';
+  title: string;
+  subtitle?: string;
+  category: 'basics' | 'income' | 'liabilities' | 'expenses' | 'credit' | 'collateral' | 'resilience' | 'productive';
+  inputType: 'currency' | 'number' | 'text' | 'select' | 'radio' | 'boolean';
+  options?: Array<{ label: string; value: any; subtext?: string }>;
+  placeholder?: string;
+  defaultValue?: any;
+  outputImpact: string; // Tells user explicitly which output (O1, O2, O3, O4) this moves!
+  appliesIf?: (currentInput: Partial<BorrowerInput>) => boolean;
+}
+
+export const QUESTION_SCHEMA: QuestionDefinition[] = [
+  // --- TIER 1: MUST QUESTIONS (8-10 Essential Baseline) ---
+  {
+    id: 'borrowerName',
+    tier: 'must',
+    title: 'What should we call you?',
+    subtitle: 'No login, no bureau pull, no personal data stored.',
+    category: 'basics',
+    inputType: 'text',
+    placeholder: 'e.g. Priya, Ravi, Anita, or enter your name',
+    defaultValue: 'Priya',
+    outputImpact: 'Personalizes the branch Negotiation Card.',
+  },
+  {
+    id: 'purpose',
+    tier: 'must',
+    title: 'Why do you need this loan?',
+    subtitle: 'Lenders and financial safety rules treat productive investments very differently from pure consumption.',
+    category: 'basics',
+    inputType: 'select',
+    options: [
+      { label: 'Wedding / Social Function (Pure Consumption)', value: 'wedding_consumption', subtext: 'Depreciates instantly with zero monetary return' },
+      { label: 'Kirana / Business Inventory & Expansion', value: 'business_inventory', subtext: 'Productive: generates recurring shop gross margins' },
+      { label: 'Electric Scooter / Vehicle for Work', value: 'electric_scooter_work', subtext: 'Productive: unlocks daily gig/delivery earnings' },
+      { label: 'Home Renovation / Improvement', value: 'home_renovation', subtext: 'Capital asset value enhancement' },
+      { label: 'Medical / Family Emergency', value: 'medical_emergency', subtext: 'Unplanned liquidity requirement' },
+      { label: 'Debt Consolidation', value: 'debt_consolidation', subtext: 'Replacing high-interest loans with a single cheaper facility' },
+      { label: 'Other Personal Expense', value: 'other', subtext: 'General consumption' },
+    ],
+    defaultValue: 'wedding_consumption',
+    outputImpact: 'Moves O1 (Verdict) and determines whether future cash flow ROI counts towards safe carrying capacity.',
+  },
+  {
+    id: 'amountWanted',
+    tier: 'must',
+    title: 'How much money do you want to borrow?',
+    subtitle: 'The principal amount in Rupees you are planning to request from a lender.',
+    category: 'basics',
+    inputType: 'currency',
+    defaultValue: 500000,
+    outputImpact: 'Moves O1 (Verdict), O2 (Amount Gap), and O4 (Proposed Monthly EMI).',
+  },
+  {
+    id: 'employmentType',
+    tier: 'must',
+    title: 'What is your primary source of income?',
+    subtitle: 'Indian retail credit models run separate underwriting scorecards based on employment formality.',
+    category: 'income',
+    inputType: 'radio',
+    options: [
+      { label: 'Salaried (Regular monthly salary slip & bank credit)', value: 'salaried', subtext: 'Lowest risk tier for prime personal loans' },
+      { label: 'Self-Employed (Own business / store / trading / GST / ITR)', value: 'self_employed', subtext: 'Assessed on ITR cashflow & shop assets' },
+      { label: 'Informal / Gig Worker (Platform app / cash / tailoring)', value: 'informal', subtext: 'Cash flow surrogate underwriting with 40% haircut' },
+    ],
+    defaultValue: 'salaried',
+    outputImpact: 'Moves O3 (Base rack rate benchmark by 200–450 bps) and sets the maximum permissible FOIR.',
+  },
+  {
+    id: 'netMonthlyIncome',
+    tier: 'must',
+    title: 'What is your actual net monthly take-home / cash income?',
+    subtitle: 'Amount you take home in hand after taxes / net business cash inflow.',
+    category: 'income',
+    inputType: 'currency',
+    defaultValue: 60000,
+    outputImpact: 'Moves O2 (Lender Sanction & Borrower Safe Carry) and establishes your FOIR ceiling.',
+  },
+  {
+    id: 'existingEmis',
+    tier: 'must',
+    title: 'Total monthly EMIs you are currently paying',
+    subtitle: 'Car loan, two-wheeler loan, personal loans, BNPL, or app loan installments.',
+    category: 'liabilities',
+    inputType: 'currency',
+    defaultValue: 0,
+    outputImpact: 'Directly reduces both O2 (Max Sanction) and O4 (Available safe EMI headroom).',
+  },
+  {
+    id: 'monthlyRent',
+    tier: 'must',
+    title: 'Monthly house / premises rent you pay',
+    subtitle: 'Enter ₹0 if you live in your own house.',
+    category: 'expenses',
+    inputType: 'currency',
+    defaultValue: 0,
+    outputImpact: 'Critical for O2: Lenders often ignore rent in gross FOIR, but Borrower Safe Carry deducts it.',
+  },
+  {
+    id: 'monthlyHouseholdExpenses',
+    tier: 'must',
+    title: 'Essential monthly living expenses',
+    subtitle: 'Groceries, utilities, children school fees, medicines, and transport.',
+    category: 'expenses',
+    inputType: 'currency',
+    defaultValue: 20000,
+    outputImpact: 'Guarantees the non-negotiable living survival floor in O2 and O4.',
+  },
+  {
+    id: 'age',
+    tier: 'must',
+    title: 'Borrower Age',
+    subtitle: 'Lenders cap maximum loan tenure so that the loan amortizes before retirement age (60–65).',
+    category: 'basics',
+    inputType: 'number',
+    defaultValue: 30,
+    outputImpact: 'Caps maximum allowable tenure in O4.',
+  },
+  {
+    id: 'creditScoreStatus',
+    tier: 'must',
+    title: 'Credit Bureau (CIBIL) Score Status',
+    subtitle: 'Rule: "Unknown is never zero." If you do not know or have never borrowed, we price you fairly as New-to-Credit.',
+    category: 'credit',
+    inputType: 'radio',
+    options: [
+      { label: 'I know my score (e.g., 780)', value: 'known', subtext: 'Unlocks narrowest prime card rates' },
+      { label: 'Never had a formal loan / No credit history (NTB)', value: 'no_history', subtext: 'Priced as unscored prime (+1.5%), NOT as bad credit' },
+      { label: 'I don\'t know my score', value: 'unknown', subtext: 'App uses calibrated band and shows consequence' },
+    ],
+    defaultValue: 'known',
+    outputImpact: 'Directly moves O3 (shifts rate band by up to 400 bps) and changes confidence width.',
+  },
+  {
+    id: 'creditScoreValue',
+    tier: 'must',
+    title: 'Your CIBIL / Experian Credit Score',
+    subtitle: 'Score between 300 and 900.',
+    category: 'credit',
+    inputType: 'number',
+    defaultValue: 750,
+    appliesIf: (input) => input.creditScoreStatus === 'known',
+    outputImpact: 'Determines prime discount (-50 bps for >775) vs near-prime or subprime penalty in O3.',
+  },
+
+  // --- TIER 2: ADAPTIVE PRECISION QUESTIONS (Each Moves a Number!) ---
+  // Salaried specifics
+  {
+    id: 'employerTier',
+    tier: 'additional',
+    title: 'What category is your employer?',
+    subtitle: 'Indian institutional lenders categorize employers into Super Cat A (MNCs), Cat B, and Startups.',
+    category: 'income',
+    inputType: 'select',
+    options: [
+      { label: 'Large Global MNC / Super Cat A (e.g. Google, Microsoft, Infosys)', value: 'tier1_mnc', subtext: 'Eligible for lowest 10.5% rack rate and 75 bps discount' },
+      { label: 'Listed Indian Corporate / Cat B', value: 'listed_corporate', subtext: 'Standard prime pricing (-25 bps)' },
+      { label: 'SME / Unlisted Private Company', value: 'sme', subtext: '+50 bps spread' },
+      { label: 'Early-stage Startup / High-Beta Firm', value: 'startup', subtext: '+100 bps risk buffer' },
+    ],
+    defaultValue: 'tier1_mnc',
+    appliesIf: (input) => input.employmentType === 'salaried',
+    outputImpact: 'Moves O3: Tier-1 MNC gives 75 bps discount on fair interest rate.',
+  },
+  {
+    id: 'jobVintageYears',
+    tier: 'additional',
+    title: 'How many years have you been in your current job/career?',
+    subtitle: 'Lenders look for minimum 2–3 years total stability.',
+    category: 'income',
+    inputType: 'number',
+    defaultValue: 3,
+    appliesIf: (input) => input.employmentType === 'salaried',
+    outputImpact: 'Tightens confidence spread and adds stability anchor on Negotiation Card.',
+  },
+
+  // Self-Employed specifics
+  {
+    id: 'reportedItrAnnual',
+    tier: 'additional',
+    title: 'Annual income reported in your latest Income Tax Return (ITR)',
+    subtitle: 'Banks underwrite self-employed businesses strictly against filed ITR rather than undocumented cash turnover.',
+    category: 'income',
+    inputType: 'currency',
+    defaultValue: 420000,
+    appliesIf: (input) => input.employmentType === 'self_employed',
+    outputImpact: 'Moves O2: Lenders cap unsecured borrowing capacity based on ITR income rather than shop cashflow.',
+  },
+  {
+    id: 'businessVintageYears',
+    tier: 'additional',
+    title: 'How many years has your shop or business been operating?',
+    subtitle: '3+ years shows business resilience; 10+ years qualifies for prime MSME relationship rates.',
+    category: 'income',
+    inputType: 'number',
+    defaultValue: 5,
+    appliesIf: (input) => input.employmentType === 'self_employed',
+    outputImpact: 'Reduces business risk premium and strengthens branch negotiation leverage.',
+  },
+  {
+    id: 'unencumberedPropertyMarketValue',
+    tier: 'additional',
+    title: 'Market value of unencumbered property/shop premises you own',
+    subtitle: 'The "Ravi Rule": Owning clear, debt-free commercial or residential property allows routing to Loan Against Property (LAP).',
+    category: 'collateral',
+    inputType: 'currency',
+    defaultValue: 0,
+    appliesIf: (input) => input.employmentType === 'self_employed' || (input.amountWanted || 0) >= 500000,
+    outputImpact: 'Transforms O3 (slashes rate from 18%+ to 9.25%) and O2 (unlocks up to 60% LTV = ₹27L+ sanction).',
+  },
+
+  // Household & Co-Applicant
+  {
+    id: 'secondaryIncomeMonthly',
+    tier: 'additional',
+    title: 'Secondary monthly household income (Spouse / Co-applicant)',
+    subtitle: 'e.g. Wife earning teaching salary or family member regular income.',
+    category: 'income',
+    inputType: 'currency',
+    defaultValue: 0,
+    outputImpact: 'Moves O2 and O4: Expands safe household debt-service capacity.',
+  },
+  {
+    id: 'isSecondaryIncomeFormal',
+    tier: 'additional',
+    title: 'Is this secondary income supported by formal salary slip or bank credit?',
+    category: 'income',
+    inputType: 'boolean',
+    defaultValue: true,
+    appliesIf: (input) => (input.secondaryIncomeMonthly || 0) > 0,
+    outputImpact: 'Formal income is recognized 100%; informal secondary income gets a 50% haircut.',
+  },
+
+  // Distress and Risk History (The Anita Rule)
+  {
+    id: 'hasRecentBouncedEmi',
+    tier: 'additional',
+    title: 'Have you had any bounced EMI or NACH/ECS return in the last 90 days?',
+    subtitle: 'An EMI bounce immediately triggers high-risk underwriting flags in Indian credit systems.',
+    category: 'liabilities',
+    inputType: 'boolean',
+    defaultValue: false,
+    outputImpact: 'Critical for O1: Triggers "Don\'t Borrow" if paired with high debt strain, preventing debt spiral.',
+  },
+  {
+    id: 'activeHighCostAppLoans',
+    tier: 'additional',
+    title: 'Do you have active instant loans or micro-app credit (at 30%+ APR)?',
+    subtitle: 'Fast digital app loans often trap informal borrowers with predatory weekly or daily interest.',
+    category: 'liabilities',
+    inputType: 'boolean',
+    defaultValue: false,
+    outputImpact: 'Moves O1: Flags debt trap and prioritizes loan consolidation over fresh borrowing.',
+  },
+  {
+    id: 'highCostLoanBalance',
+    tier: 'additional',
+    title: 'Total outstanding balance across these app loans',
+    subtitle: 'In Rupees.',
+    category: 'liabilities',
+    inputType: 'currency',
+    defaultValue: 0,
+    appliesIf: (input) => input.activeHighCostAppLoans === true,
+    outputImpact: 'Quantifies debt restructuring requirement in O1 and O2.',
+  },
+
+  // Emergency Savings & Buffer
+  {
+    id: 'emergencySavingsMonths',
+    tier: 'additional',
+    title: 'How many months of basic living expenses do you have saved in cash/bank?',
+    subtitle: 'Prudent benchmark is 3 to 6 months before taking on optional consumption debt.',
+    category: 'resilience',
+    inputType: 'number',
+    defaultValue: 3,
+    outputImpact: 'Directly adjusts O2 Safe Carrying Capacity and O1 Verdict for non-essential loans.',
+  },
+
+  // Productive ROI
+  {
+    id: 'isProductiveLoan',
+    tier: 'additional',
+    title: 'Will this loan directly generate income for you or your business?',
+    subtitle: 'e.g. Kirana store second stock line or delivery vehicle that doubles orders.',
+    category: 'productive',
+    inputType: 'boolean',
+    defaultValue: false,
+    appliesIf: (input) => input.purpose === 'business_inventory' || input.purpose === 'electric_scooter_work',
+    outputImpact: 'Unlocks productive ROI credit in O1 (Verdict) and expands safe borrowing capacity.',
+  },
+  {
+    id: 'expectedMonthlyRevenueBoost',
+    tier: 'additional',
+    title: 'Expected extra net monthly revenue generated by this asset/stock',
+    subtitle: 'In Rupees per month.',
+    category: 'productive',
+    inputType: 'currency',
+    defaultValue: 0,
+    appliesIf: (input) => input.isProductiveLoan === true,
+    outputImpact: 'Recognizes 50% of the revenue uplift as safe cashflow cushion in O2 and O4.',
+  },
+];
