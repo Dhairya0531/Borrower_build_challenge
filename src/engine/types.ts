@@ -203,6 +203,12 @@ export interface NegotiationCardResult {
   };
 }
 
+export interface LimitGuess {
+  area: string;
+  whatWeDoNotKnow: string;
+  whatWeAreGuessing: string;
+}
+
 export interface CopilotCalculationResult {
   confidence: ConfidenceResult;
   o1: O1VerdictResult;
@@ -210,4 +216,5 @@ export interface CopilotCalculationResult {
   o3: O3FairRateResult;
   o4: O4SafeEmiResult;
   negotiationCard: NegotiationCardResult;
+  whereTheAppIsGuessing: LimitGuess[];
 }

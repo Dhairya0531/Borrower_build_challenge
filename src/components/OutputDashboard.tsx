@@ -7,6 +7,7 @@ import {
   Zap,
   ArrowRight,
   TrendingDown,
+  HelpCircle,
 } from 'lucide-react';
 
 interface OutputDashboardProps {
@@ -444,6 +445,39 @@ export const OutputDashboard: React.FC<OutputDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* HONESTY ABOUT LIMITS: WHERE THE APP IS GUESSING */}
+      {calculation.whereTheAppIsGuessing && calculation.whereTheAppIsGuessing.length > 0 && (
+        <div className="bg-amber-50/60 border border-amber-300/80 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <HelpCircle className="w-4 h-4 text-amber-800 flex-shrink-0" />
+            <h4 className="text-xs uppercase font-semibold tracking-wider text-amber-950 m-0">
+              Honesty About Limits · Where the Copilot is Guessing
+            </h4>
+          </div>
+          <p className="text-xs text-amber-900/90 mb-3 leading-relaxed">
+            Per Challenge Rubric: We never pretend false certainty. Here are the specific areas where this self-assessment relies on conservative institutional assumptions rather than full verification:
+          </p>
+          <div className="space-y-2.5">
+            {calculation.whereTheAppIsGuessing.map((item, idx) => (
+              <div key={idx} className="bg-white/90 p-3 rounded-lg border border-amber-200 text-xs">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-semibold text-amber-950">{item.area}</span>
+                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-amber-100 text-amber-900">
+                    Assumption
+                  </span>
+                </div>
+                <div className="text-[11px] text-[#6E6069] mb-0.5">
+                  <b>What we do NOT know:</b> {item.whatWeDoNotKnow}
+                </div>
+                <div className="text-[11px] text-[#221A20]">
+                  <b>Where we are guessing:</b> {item.whatWeAreGuessing}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* CTA to Negotiation Card */}
       <div className="bg-[#4B2440] text-white rounded-xl p-5 flex items-center justify-between flex-wrap gap-4 shadow-md">

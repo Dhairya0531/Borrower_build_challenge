@@ -11,6 +11,7 @@ import {
   FactorAdjustment,
   TenureOption,
   CounterScript,
+  LimitGuess,
 } from './types';
 import {
   PRODUCT_BENCHMARKS,
@@ -821,6 +822,45 @@ export function runBorrowerCopilot(input: BorrowerInput): CopilotCalculationResu
     lenderQuoteComparison: lenderQuoteComparisonData,
   };
 
+  // --- Honesty About Limits: What We Do Not Know & Where We Are Guessing ---
+  const whereTheAppIsGuessing: LimitGuess[] = [
+    {
+      area: 'Credit Inquiries (Hard Pulls)',
+      whatWeDoNotKnow: 'Whether you applied at other lenders this week (we never pull bureau files to preserve your score).',
+      whatWeAreGuessing: 'Guessing clean inquiry velocity (<2 hard pulls in last 30 days). Multiple recent applications drop CIBIL by 15-30 points.',
+    },
+  ];
+
+  if (input.employmentType === 'informal') {
+    whereTheAppIsGuessing.push({
+      area: 'Informal Cash Turnover',
+      whatWeDoNotKnow: 'Exact gross margin without audited GST returns or formal salary slips.',
+      whatWeAreGuessing: `Guessing a flat 40% haircut on your ₹${input.netMonthlyIncome.toLocaleString('en-IN')} cash. Cooperative lenders may recognize 70%, while strict PSU banks recognize 0%.`,
+    });
+  }
+
+  if (input.creditScoreStatus === 'unknown' || input.creditScoreStatus === 'no_history') {
+    whereTheAppIsGuessing.push({
+      area: 'Credit History & Repayment Track',
+      whatWeDoNotKnow: 'Your past loan repayment track record or hidden delinquencies.',
+      whatWeAreGuessing: 'Guessing unscored prime (+1.50% buffer). We do not assume bad credit, but a bank surrogate review will be required.',
+    });
+  }
+
+  if (input.unencumberedPropertyMarketValue && input.unencumberedPropertyMarketValue > 0) {
+    whereTheAppIsGuessing.push({
+      area: 'Property Collateral Distress Valuation',
+      whatWeDoNotKnow: 'Encumbrance status, local municipal circle rate discounts, or title search defects.',
+      whatWeAreGuessing: `Guessing your ₹${((input.unencumberedPropertyMarketValue) / 100000).toFixed(1)}L property realizes a clean 60% LTV sanction. Bank valuer technical reports often apply a 15–20% distress haircut.`,
+    });
+  }
+
+  whereTheAppIsGuessing.push({
+    area: 'Branch Manager Discretionary Pricing',
+    whatWeDoNotKnow: 'Whether the branch manager has unmet month-end or quarter-end lending targets.',
+    whatWeAreGuessing: 'Guessing standard card rack rates. Visiting a branch in the last 10 days of a quarter can unlock an extra 25–50 bps rate discount.',
+  });
+
   return {
     confidence,
     o1,
@@ -828,5 +868,6 @@ export function runBorrowerCopilot(input: BorrowerInput): CopilotCalculationResu
     o3,
     o4,
     negotiationCard,
+    whereTheAppIsGuessing,
   };
 }
