@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #FBF9FA;
+  --bg2: #F3EEF1;
+  --ink: #221A20;
+  --muted: #6E6069;
+  --rule: #E2D9DE;
+  --accent: #4B2440;
+  --accent-ink: #FBF9FA;
+  --accent-soft: #EFE3EA;
+  --warn: #8A4B12;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", Menlo, Consolas, monospace;
+}
+
+body {
+  font-family: var(--body);
+  background-color: var(--bg);
+  color: var(--ink);
+}
+
+.font-display {
+  font-family: var(--display);
+}
+
+.font-mono {
+  font-family: var(--mono);
+}
+
+/* =====================================================
+   Print Styles — Negotiation Card: print-clean output
+   ===================================================== */
+@media print {
+  /* Hide everything that is NOT the negotiation card */
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remove page margins and background */
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11pt;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Force card to use full width */
+  .max-w-4xl,
+  .max-w-7xl {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Card border visible on paper */
+  .border-2.border-\[\#4B2440\] {
+    border: 2px solid #4B2440 !important;
+  }
+
+  /* Page break rules */
+  .space-y-6 > div {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure counter-script boxes are readable */
+  .bg-emerald-50\/70,
+  .bg-amber-50\/70,
+  .bg-rose-50\/80 {
+    background: white !important;
+    border: 1px solid #ccc !important;
+  }
+}
+
